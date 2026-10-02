@@ -66,8 +66,13 @@
                                 <div class="card-body p-4">
                                     <div class="row g-3">
                                         <div class="col-md-6">
-                                            <label for="txtSolicitante" class="form-label fw-semibold">Usuario Solicitante</label>
-                                            <input id="txtSolicitante" type="text" class="form-control" value="David Meza" readonly />
+                                            <label for="txtSolicitante" class="form-label fw-semibold">Agente</label>
+                                            <input id="txtSolicitante" type="text" class="form-control" readonly />
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label for="txtPersonaBeneficiaria" class="form-label fw-semibold">Solicitante</label>
+                                            <input id="txtPersonaBeneficiaria" type="text" class="form-control" maxlength="150" placeholder="Nombre completo de la persona" required />
+
                                         </div>
                                         <div class="col-md-6">
                                             <label for="ddlDepartamento" class="form-label fw-semibold">Departamento</label>
@@ -162,6 +167,7 @@
                                     <tr>
                                         <th># Ticket</th>
                                         <th>Fecha</th>
+                                        <th>Agente</th>
                                         <th>Solicitante</th>
                                         <th>Prioridad</th>
                                         <th>Estado</th>
@@ -171,7 +177,7 @@
                                 </thead>
                                 <tbody id="tablaTickets">
                                     <tr>
-                                        <td colspan="7" class="text-center text-secondary py-4">Cargando tickets...</td>
+                                        <td colspan="8" class="text-center text-secondary py-4">Cargando tickets...</td>
                                     </tr>
                                 </tbody>
                             </table>
@@ -200,7 +206,7 @@
                         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
                     </div>
                     <div class="modal-body p-4">
-                        <div class="alert alert-secondary py-2 small mb-3">
+                        <div class="alert alert-secondary py-2 small mb-3 d-none">
                             <i class="bi bi-shield-lock me-1"></i> <strong>Hash de Integridad del Ticket:</strong>
                             <code id="hashTicket" class="text-break d-block mt-1">e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855</code>
                         </div>
@@ -234,6 +240,6 @@
 
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="Scripts/inicio.js"></script>
+    <script src="Scripts/inicio.js?v=<%= System.IO.File.GetLastWriteTimeUtc(Server.MapPath("~/Scripts/inicio.js")).Ticks %>"></script>
 </body>
 </html>

@@ -26,24 +26,20 @@
                         <label for="txtCorreo" class="form-label fw-semibold">Correo electronico</label>
                         <div class="input-group">
                             <span class="input-group-text"><i class="bi bi-envelope"></i></span>
-                            <input id="txtCorreo" type="email" class="form-control" value="admin@mesaayuda.local" autocomplete="username" required />
+                            <input id="txtCorreo" type="email" class="form-control" autocomplete="username" required />
                         </div>
                     </div>
                     <div class="mb-4">
                         <label for="txtClave" class="form-label fw-semibold">Contrasena</label>
                         <div class="input-group">
                             <span class="input-group-text"><i class="bi bi-lock"></i></span>
-                            <input id="txtClave" type="password" class="form-control" value="Admin123*" autocomplete="current-password" required />
+                            <input id="txtClave" type="password" class="form-control" autocomplete="current-password" required />
                         </div>
                     </div>
                     <button id="btnIngresar" type="button" class="btn btn-primary w-100 py-2">
                         <span class="texto-boton"><i class="bi bi-box-arrow-in-right me-1"></i> Iniciar sesion</span>
                         <span class="cargando d-none"><span class="spinner-border spinner-border-sm me-2"></span>Ingresando...</span>
                     </button>
-                    <div class="small text-secondary mt-4">
-                        <strong>Usuario inicial:</strong> admin@mesaayuda.local<br />
-                        <strong>Contrasena:</strong> Admin123*
-                    </div>
                 </div>
             </div>
         </main>

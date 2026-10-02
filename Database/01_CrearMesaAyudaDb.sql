@@ -1,9 +1,3 @@
-/*
-    MesaAyuda - Instalacion completa para SQL Server
-    Ejecutar en SSMS conectado a .\MSSQLSERVER2025.
-    El script es repetible y no elimina informacion existente.
-*/
-
 USE master;
 GO
 
@@ -223,6 +217,20 @@ BEGIN
 END;
 GO
 
+IF COL_LENGTH(N'dbo.Tickets', N'PersonaBeneficiaria') IS NULL
+    ALTER TABLE dbo.Tickets ADD PersonaBeneficiaria NVARCHAR(150) NULL;
+GO
+
+IF NOT EXISTS (SELECT 1 FROM dbo.Usuarios WHERE Correo = N'anthony@mesaayuda.local')
+BEGIN
+    INSERT dbo.Usuarios(NombreCompleto, Correo, PasswordHash, RolId, DepartamentoId)
+    SELECT N'Anthony Gomez', N'anthony@mesaayuda.local',
+        LOWER(CONVERT(VARCHAR(64), HASHBYTES('SHA2_256', 'Anthony123*'), 2)), r.RolId, d.DepartamentoId
+    FROM dbo.Roles r CROSS JOIN dbo.Departamentos d
+    WHERE r.Nombre = N'Administrador' AND d.Nombre = N'Sistemas';
+END;
+GO
+
 CREATE OR ALTER FUNCTION dbo.fn_CalcularHashTicket
 (
     @UsuarioId INT,
@@ -232,7 +240,8 @@ CREATE OR ALTER FUNCTION dbo.fn_CalcularHashTicket
     @Descripcion NVARCHAR(2000),
     @FechaCreacion DATETIME2(0),
     @EstadoId INT,
-    @TecnicoId INT
+    @TecnicoId INT,
+    @PersonaBeneficiaria NVARCHAR(150)
 )
 RETURNS CHAR(64)
 AS
@@ -240,7 +249,8 @@ BEGIN
     DECLARE @Contenido NVARCHAR(MAX) = CONCAT(
         @UsuarioId, N'|', @DepartamentoId, N'|', @CategoriaId, N'|', @PrioridadId, N'|',
         @Descripcion, N'|', CONVERT(NVARCHAR(19), @FechaCreacion, 126), N'|',
-        @EstadoId, N'|', COALESCE(CONVERT(NVARCHAR(20), @TecnicoId), N'NULL')
+        @EstadoId, N'|', COALESCE(CONVERT(NVARCHAR(20), @TecnicoId), N'NULL'),
+        CASE WHEN @PersonaBeneficiaria IS NULL THEN N'' ELSE CONCAT(N'|', @PersonaBeneficiaria) END
     );
 
     RETURN LOWER(CONVERT(VARCHAR(64), HASHBYTES('SHA2_256', @Contenido), 2));
@@ -281,11 +291,11 @@ BEGIN
             )
         END,
         CASE WHEN d.TicketId IS NULL THEN NULL ELSE
-            (SELECT d.Numero, d.DepartamentoId, d.CategoriaId, d.PrioridadId, d.Descripcion,
+            (SELECT d.Numero, d.DepartamentoId, d.CategoriaId, d.PrioridadId, d.Descripcion, d.PersonaBeneficiaria,
                     d.EstadoId, d.TecnicoAsignadoId, d.FechaCierre, d.HashIntegridad
              FOR JSON PATH, WITHOUT_ARRAY_WRAPPER) END,
         CASE WHEN i.TicketId IS NULL THEN NULL ELSE
-            (SELECT i.Numero, i.DepartamentoId, i.CategoriaId, i.PrioridadId, i.Descripcion,
+            (SELECT i.Numero, i.DepartamentoId, i.CategoriaId, i.PrioridadId, i.Descripcion, i.PersonaBeneficiaria,
                     i.EstadoId, i.TecnicoAsignadoId, i.FechaCierre, i.HashIntegridad
              FOR JSON PATH, WITHOUT_ARRAY_WRAPPER) END
     FROM inserted i
@@ -333,11 +343,16 @@ CREATE OR ALTER PROCEDURE dbo.sp_TicketCrear
     @DepartamentoId INT,
     @CategoriaId INT,
     @PrioridadId INT,
-    @Descripcion NVARCHAR(2000)
+    @Descripcion NVARCHAR(2000),
+    @PersonaBeneficiaria NVARCHAR(150)
 AS
 BEGIN
     SET NOCOUNT ON;
     SET XACT_ABORT ON;
+
+    IF NULLIF(LTRIM(RTRIM(@PersonaBeneficiaria)), N'') IS NULL
+        THROW 50006, 'Indique la persona que necesita ayuda.', 1;
+    SET @PersonaBeneficiaria = LTRIM(RTRIM(@PersonaBeneficiaria));
 
     IF LEN(LTRIM(RTRIM(@Descripcion))) < 10
         THROW 50001, 'La descripcion debe contener al menos 10 caracteres.', 1;
@@ -348,7 +363,7 @@ BEGIN
     DECLARE @EstadoId INT = (SELECT EstadoId FROM dbo.Estados WHERE Nombre = N'Abierto' AND Activo = 1);
     DECLARE @Hash CHAR(64) = dbo.fn_CalcularHashTicket(
         @UsuarioId, @DepartamentoId, @CategoriaId, @PrioridadId,
-        LTRIM(RTRIM(@Descripcion)), @Fecha, @EstadoId, NULL
+        LTRIM(RTRIM(@Descripcion)), @Fecha, @EstadoId, NULL, @PersonaBeneficiaria
     );
 
     EXEC sys.sp_set_session_context @key = N'UsuarioId', @value = @UsuarioId;
@@ -358,13 +373,13 @@ BEGIN
     (
         TicketId, Numero, UsuarioSolicitanteId, DepartamentoId, CategoriaId,
         PrioridadId, Descripcion, FechaCreacion, EstadoId, TecnicoAsignadoId,
-        FechaCierre, HashIntegridad
+        FechaCierre, HashIntegridad, PersonaBeneficiaria
     )
     VALUES
     (
         @TicketId, @Numero, @UsuarioId, @DepartamentoId, @CategoriaId,
         @PrioridadId, LTRIM(RTRIM(@Descripcion)), @Fecha, @EstadoId, NULL,
-        NULL, @Hash
+        NULL, @Hash, @PersonaBeneficiaria
     );
 
     SELECT @TicketId AS TicketId, @Numero AS Numero, @Hash AS HashIntegridad;
@@ -380,7 +395,7 @@ BEGIN
 
     SELECT
         t.TicketId, t.Numero, t.FechaCreacion,
-        solicitante.NombreCompleto AS Solicitante,
+        solicitante.NombreCompleto AS Solicitante, t.PersonaBeneficiaria,
         d.Nombre AS Departamento, c.Nombre AS Categoria,
         p.PrioridadId, p.Nombre AS Prioridad,
         e.EstadoId, e.Nombre AS Estado,
@@ -388,7 +403,7 @@ BEGIN
         t.Descripcion, t.HashIntegridad,
         CONVERT(BIT, CASE WHEN t.HashIntegridad = dbo.fn_CalcularHashTicket(
             t.UsuarioSolicitanteId, t.DepartamentoId, t.CategoriaId, t.PrioridadId,
-            t.Descripcion, t.FechaCreacion, t.EstadoId, t.TecnicoAsignadoId
+            t.Descripcion, t.FechaCreacion, t.EstadoId, t.TecnicoAsignadoId, t.PersonaBeneficiaria
         ) THEN 1 ELSE 0 END) AS HashValido
     FROM dbo.Tickets t
     INNER JOIN dbo.Usuarios solicitante ON solicitante.UsuarioId = t.UsuarioSolicitanteId
@@ -486,7 +501,7 @@ BEGIN
 
     SELECT @Hash = dbo.fn_CalcularHashTicket(
         UsuarioSolicitanteId, DepartamentoId, CategoriaId, PrioridadId,
-        Descripcion, FechaCreacion, @EstadoId, @TecnicoId
+        Descripcion, FechaCreacion, @EstadoId, @TecnicoId, PersonaBeneficiaria
     )
     FROM dbo.Tickets
     WHERE TicketId = @TicketId;
@@ -539,7 +554,6 @@ BEGIN
 END;
 GO
 
-/* Normaliza mensajes de auditoria creados por versiones anteriores del proyecto. */
 UPDATE dbo.BitacoraTickets
 SET Cambios = REPLACE(
     TRANSLATE(

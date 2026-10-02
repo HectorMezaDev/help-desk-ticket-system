@@ -72,6 +72,7 @@ namespace MesaAyuda.Frontend
                     DepartamentoId = solicitud.DepartamentoId,
                     CategoriaId = solicitud.CategoriaId,
                     PrioridadId = solicitud.PrioridadId,
+                    PersonaBeneficiaria = solicitud.PersonaBeneficiaria,
                     Descripcion = solicitud.Descripcion
                 });
 
@@ -162,6 +163,7 @@ namespace MesaAyuda.Frontend
         public int DepartamentoId { get; set; }
         public int CategoriaId { get; set; }
         public int PrioridadId { get; set; }
+        public string PersonaBeneficiaria { get; set; }
         public string Descripcion { get; set; }
     }
 

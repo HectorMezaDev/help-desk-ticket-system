@@ -101,6 +101,11 @@ namespace MesaAyuda.Backend.Services
                 throw new ArgumentException("Los datos del ticket estan incompletos.");
             }
 
+            if (string.IsNullOrWhiteSpace(ticket.PersonaBeneficiaria) || ticket.PersonaBeneficiaria.Trim().Length > 150)
+            {
+                throw new ArgumentException("Escribe el nombre del solicitante (maximo 150 caracteres). Si ya lo escribiste, recarga la pagina e intenta nuevamente.");
+            }
+
             using (SqlConnection conexion = Conexion.Crear())
             using (SqlCommand comando = new SqlCommand("dbo.sp_TicketCrear", conexion))
             {
@@ -109,6 +114,7 @@ namespace MesaAyuda.Backend.Services
                 comando.Parameters.Add("@DepartamentoId", SqlDbType.Int).Value = ticket.DepartamentoId;
                 comando.Parameters.Add("@CategoriaId", SqlDbType.Int).Value = ticket.CategoriaId;
                 comando.Parameters.Add("@PrioridadId", SqlDbType.Int).Value = ticket.PrioridadId;
+                comando.Parameters.Add("@PersonaBeneficiaria", SqlDbType.NVarChar, 150).Value = ticket.PersonaBeneficiaria.Trim();
                 comando.Parameters.Add("@Descripcion", SqlDbType.NVarChar, 2000).Value = ticket.Descripcion.Trim();
                 conexion.Open();
 
@@ -154,6 +160,7 @@ namespace MesaAyuda.Backend.Services
                 Numero = Convert.ToString(lector["Numero"]),
                 Fecha = Convert.ToDateTime(lector["FechaCreacion"]).ToString("dd/MM/yyyy HH:mm"),
                 Solicitante = Convert.ToString(lector["Solicitante"]),
+                PersonaBeneficiaria = Convert.ToString(lector["PersonaBeneficiaria"]),
                 Departamento = Convert.ToString(lector["Departamento"]),
                 Categoria = Convert.ToString(lector["Categoria"]),
                 PrioridadId = Convert.ToInt32(lector["PrioridadId"]),

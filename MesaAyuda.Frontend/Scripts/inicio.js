@@ -90,7 +90,7 @@ function renderizarTickets(tickets, esAdministrador) {
     var $tabla = $('#tablaTickets').empty();
 
     if (!tickets.length) {
-        $('<tr>').append($('<td colspan="7" class="text-center text-secondary py-4">').text('No hay tickets registrados.')).appendTo($tabla);
+        $('<tr>').append($('<td colspan="8" class="text-center text-secondary py-4">').text('No hay tickets registrados.')).appendTo($tabla);
         return;
     }
 
@@ -99,6 +99,7 @@ function renderizarTickets(tickets, esAdministrador) {
         $('<td class="fw-bold">').text(ticket.Numero).appendTo($fila);
         $('<td>').text(ticket.Fecha).appendTo($fila);
         $('<td>').text(ticket.Solicitante).appendTo($fila);
+        $('<td>').text(ticket.PersonaBeneficiaria || 'No especificada').appendTo($fila);
         $('<td>').append($('<span class="badge">').addClass(clasePrioridad(ticket.Prioridad)).text(ticket.Prioridad)).appendTo($fila);
         $('<td>').append($('<span class="badge">').addClass(claseEstado(ticket.Estado)).text(ticket.Estado)).appendTo($fila);
 
@@ -146,8 +147,14 @@ function registrarTicket() {
         DepartamentoId: Number($('#ddlDepartamento').val()),
         CategoriaId: Number($('#ddlCategoria').val()),
         PrioridadId: Number($('#ddlPrioridad').val()),
-        Descripcion: descripcion
+        Descripcion: descripcion,
+        PersonaBeneficiaria: $('#txtPersonaBeneficiaria').val().trim()
     };
+
+    if (!solicitud.PersonaBeneficiaria || solicitud.PersonaBeneficiaria.length > 150) {
+        mostrarMensaje('Escribe el nombre del solicitante (maximo 150 caracteres).', 'warning');
+        return;
+    }
 
     if (!solicitud.DepartamentoId || !solicitud.CategoriaId || !solicitud.PrioridadId || descripcion.length < 10) {
         mostrarMensaje('Selecciona los catalogos y escribe una descripcion de al menos 10 caracteres.', 'warning');
@@ -208,7 +215,7 @@ function subirEvidencia(ticketId, archivo, mensajeTicket) {
 
 function finalizarRegistro(mensaje) {
     $('#ddlDepartamento, #ddlCategoria').val('');
-    $('#txtDescripcion, #archivoEvidencia').val('');
+    $('#txtDescripcion, #archivoEvidencia, #txtPersonaBeneficiaria').val('');
     mostrarMensaje(mensaje, 'success');
     cargarDatos();
 }

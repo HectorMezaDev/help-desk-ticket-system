@@ -14,6 +14,7 @@ namespace MesaAyuda.Backend.Dtos
         public string Estado { get; set; }
         public int? TecnicoId { get; set; }
         public string Tecnico { get; set; }
+        public string PersonaBeneficiaria { get; set; }
         public string Descripcion { get; set; }
         public string HashIntegridad { get; set; }
         public bool HashValido { get; set; }
